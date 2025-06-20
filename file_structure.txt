@@ -1,0 +1,74 @@
+src/
+├── components/
+│   ├── common/            # Shared UI components
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   └── ...
+│   │
+│   ├── layout/            # Layout components
+│   │   ├── Navbar.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── Footer.tsx
+│   │
+│   └── features/
+│       ├── analytics/     # Analytics-specific components
+│       │   ├── MetricCard.tsx
+│       │   └── Filters.tsx
+│       │
+│       ├── chat/          # Chatbot components
+│       │   ├── MessageBubble.tsx
+│       │   ├── ChatInput.tsx
+│       │   └── ChatHistory.tsx
+│       │
+│       └── models/        # Model visualization components
+│           ├── ModelCard.tsx
+│           ├── ResultsTable.tsx
+│           └── Visualization.tsx
+│
+├── pages/
+│   ├── ChatbotPage/       # Chatbot interface
+│   │   ├── ChatbotPage.tsx
+│   │   └── components/    # Page-specific chat components
+│   │
+│   ├── DashboardPage/     # Power BI dashboards
+│   │   ├── DashboardPage.tsx
+│   │   └── hooks/
+│   │       └── usePowerBiEmbed.tsx  # Custom hook for embedding
+│   │
+│   ├── SegmentationPage/  # Segmentation models
+│   │   ├── SegmentationPage.tsx
+│   │   ├── components/
+│   │   │   ├── SegmentVisualization.tsx
+│   │   │   └── ParametersForm.tsx
+│   │   └── hooks/
+│   │       └── useSegmentation.tsx
+│   │
+│   └── PredictivePage/    # Predictive modeling
+│       ├── PredictivePage.tsx
+│       ├── components/
+│       │   ├── ModelSelector.tsx
+│       │   ├── PredictionForm.tsx
+│       │   └── ResultsDisplay.tsx
+│       └── hooks/
+│           └── usePrediction.tsx
+│
+├── services/
+│   ├── api/
+│   │   ├── chatService.ts     # Chatbot API calls
+│   │   ├── analyticsService.ts # Power BI API
+│   │   └── modelService.ts    # Model endpoints
+│   │
+│   └── utils/
+│       ├── powerBiUtils.ts    # Power BI helper functions
+│       └── modelHelpers.ts    # Model data processing
+│
+├── types/
+│   ├── chat.ts           # Chatbot types
+│   ├── analytics.ts      # Dashboard types
+│   └── models.ts         # Model types
+│
+├── contexts/
+│   ├── AnalyticsContext.tsx  # Dashboard filters/state
+│   └── ChatContext.tsx       # Chat history/state
+│
+└── ... (other folders like assets, styles, etc.)

@@ -1,10 +1,14 @@
-import React from "react"
-import ReactDOM from "react-dom/client"
-import App from "./App.tsx"
-import "./index.css"
+// src/main.tsx or src/index.tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css' // <-- Tailwind styles
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
-)
+);
