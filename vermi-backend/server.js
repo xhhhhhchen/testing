@@ -17,7 +17,7 @@ app.use(express.json());
 
 
 // Routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes); 
 app.use('/api/tanks', tankRoutes);
 
 app.get('/__debug', (req, res) => {

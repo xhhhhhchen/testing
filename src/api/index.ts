@@ -1,45 +1,47 @@
+import type { Device } from "../types";
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
-// User Registration
-export const registerUser = async (userData: {
-  name: string;
-  email: string;
-  password: string;
-  location?: string;
-  tank_id: string;
-}) => {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData),
-  });
+// // User Registration
+// export const registerUser = async (userData: {
+//   name: string;
+//   email: string;
+//   password: string;
+//   location?: string;
+//   tank_id: string;
+// }) => {
+//   const response = await fetch(`${API_URL}/auth/register`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(userData),
+//   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Registration failed');
-  }
+//   if (!response.ok) {
+//     const error = await response.json();
+//     throw new Error(error.message || 'Registration failed');
+//   }
 
-  return response.json();
-};
+//   return response.json();
+// };
 
-// User Login
-export const loginUser = async (credentials: {
-  email: string;
-  password: string;
-}) => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(credentials),
-  });
+// // User Login
+// export const loginUser = async (credentials: {
+//   email: string;
+//   password: string;
+// }) => {
+//   const response = await fetch(`${API_URL}/auth/login`, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify(credentials),
+//   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Login failed');
-  }
+//   if (!response.ok) {
+//     const error = await response.json();
+//     throw new Error(error.message || 'Login failed');
+//   }
 
-  return response.json();
-};
+//   return response.json();
+// };
 
 // Get All Locations
 export const getAllLocations = async () => {
@@ -55,3 +57,16 @@ export const getTanksByLocation = async (locationId: string) => {
   return response.json();
 };
 
+
+
+
+export async function getTanksByIds(ids: string[]): Promise<Device[]> {
+  try {
+    const response = await fetch(`/api/tanks/tankinfo?ids=${ids.join(',')}`);
+    if (!response.ok) throw new Error('Failed to fetch tanks');
+    return await response.json();
+  } catch (error) {
+    console.error('Tank fetch error:', error);
+    return [];
+  }
+}

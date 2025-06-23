@@ -1,7 +1,7 @@
 function predictive() {
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen ">
       <p>This is a page for predictive</p>
     </div>
   );

@@ -76,8 +76,43 @@ const getAllLocations = async (req, res) => {
   }
 };
 
+
+const getTanksByIds = async (req, res) => {
+  const idsParam = req.query.ids;
+  if (!idsParam) return res.status(400).json({ message: 'ids query param is required' });
+
+  const ids = idsParam.split(',').map(id => parseInt(id, 10));
+
+
+  try {
+    const result = await tankQuery(`
+      SELECT 
+        DeviceID AS id,
+        DeviceName AS name,
+        DeviceDescription AS description,
+        LocationID AS location_id
+      FROM Devices
+      WHERE DeviceID = ANY($1::int[])
+    `, [ids]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tanks by ids:', error);
+    res.status(500).json({ 
+      message: 'Error fetching tanks by ids',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+
+
 module.exports = {
   // getAvailableDevices,
   getTanksByLocation,
-  getAllLocations
+  getAllLocations,
+  getTanksByIds
 };
+
+
+
