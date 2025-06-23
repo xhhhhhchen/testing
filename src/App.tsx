@@ -12,7 +12,6 @@ import Homepage from './pages/Homepage';
 import NotificationPage from './pages/NotificationPage';
 import CommunityForum from './pages/CommunityForum';
 import FAQs from './pages/FAQ.tsx';
-import CheckEmailPage from './components/check-email.tsx'; 
 import { AnimatePresence, motion } from 'framer-motion';
 
 function App() {
@@ -114,7 +113,6 @@ function App() {
             <Route path="/" element={<Login onLogin={handleLogin} />} />
               <Route path="/login" element={<Login onLogin={handleLogin} />} />
               <Route path="/select-tank" element={<TankSelection />} />
-              <Route path="/new-acc" element={<CheckEmailPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </motion.div>
