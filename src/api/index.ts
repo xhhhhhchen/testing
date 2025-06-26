@@ -58,8 +58,6 @@ export const getTanksByLocation = async (locationId: string) => {
 };
 
 
-
-
 export async function getTanksByIds(ids: string[]): Promise<Device[]> {
   try {
     const response = await fetch(`/api/tanks/tankinfo?ids=${ids.join(',')}`);

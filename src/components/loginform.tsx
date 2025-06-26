@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import vmlogoIcon from '../assets/smallerlogo.png';
 import { signInUser, getSession } from '../utils/authUtils';
+import { useUser } from '../contexts/UserContext'; 
 // import { supabase } from '../supabaseClient.ts';
 // import { getTanksByIds } from '../api';
 
@@ -156,6 +157,8 @@ export const Login = ({ onLogin }: LoginProps) => {
 // };
 
 
+const { setIsAuthenticated, refreshUser } = useUser();
+
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!validateForm()) return;
@@ -183,11 +186,16 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       // ✅ Store only minimal auth data
       localStorage.setItem('userId', userId);
-      localStorage.setItem('token', session.access_token);
+      localStorage.setItem('accessToken', session.access_token);
       localStorage.setItem('email', session.user.email ?? '');
 
       onLogin();
-      navigate('/homepage'); // In homepage, fetch full data using userId
+      
+      // ✅ Sync with context so refresh is triggered
+      setIsAuthenticated(true);
+      await refreshUser(); // load full profile
+
+      navigate('/homepage');
 
     } catch (error: any) {
       console.error('Login error:', error);

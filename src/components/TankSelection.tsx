@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef,useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAllLocations, getTanksByLocation } from '../api';
 import { registerUserAndAssignTanks } from '../utils/authUtils';
 import { LoadingSpinner } from './LoadingSpinner';
 import { supabase } from '../supabaseClient.ts';
+import { useUser } from '../contexts/UserContext';
 
 interface Location {
   id: string;
@@ -20,70 +21,76 @@ interface Tank {
   locationId?: string;
 }
 
-const AnimatedTankItem = ({ 
-  tank, 
-  selected, 
-  onChange 
-}: { 
+interface AnimatedTankItemProps {
   tank: Tank;
   selected: boolean;
   onChange: (id: string) => void;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.2 }}
-    className={`p-3 rounded-lg border-2 transition-all ${
-      selected
-        ? 'bg-green-800/90 border-yellow-400 shadow-md shadow-yellow-400/30'
-        : 'bg-green-900/40 border-green-800 hover:bg-green-800/70 hover:border-green-600'
-    }`}
-  >
-    <label className="flex items-start cursor-pointer gap-3">
-      <div className="relative flex items-center group">
-        <input
-          type="checkbox"
-          id={`tank-${tank.id}`}
-          className="absolute opacity-0 h-0 w-0 peer"
-          checked={selected}
-          onChange={() => onChange(tank.id)}
-        />
-        <div className="flex items-center">
-          <span className={`mr-3 flex items-center justify-center w-5 h-5 border-2 rounded transition-all
-            ${selected 
-              ? 'bg-yellow-400 border-yellow-400 shadow-inner'
-              : 'bg-green-900/80 border-green-500 group-hover:border-yellow-400 group-hover:bg-green-800'
-            }`}
-          >
-            {selected && (
-              <motion.svg 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="w-3 h-3 text-green-900" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </motion.svg>
-            )}
-          </span>
-          <div className="flex-1 min-w-0">
-            <span className="block font-medium text-yellow-100 truncate tracking-wide">
-              {tank.name}
+}
+
+const AnimatedTankItem = forwardRef<HTMLDivElement, AnimatedTankItemProps>(
+  ({ tank, selected, onChange }, ref) => (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className={`p-3 rounded-lg border-2 transition-all ${
+        selected
+          ? 'bg-green-800/90 border-yellow-400 shadow-md shadow-yellow-400/30'
+          : 'bg-green-900/40 border-green-800 hover:bg-green-800/70 hover:border-green-600'
+      }`}
+    >
+      <label className="flex items-start cursor-pointer gap-3">
+        <div className="relative flex items-center group">
+          <input
+            type="checkbox"
+            id={`tank-${tank.id}`}
+            className="absolute opacity-0 h-0 w-0 peer"
+            checked={selected}
+            onChange={() => onChange(tank.id)}
+            aria-checked={selected}
+          />
+          <div className="flex items-center">
+            <span className={`mr-3 flex items-center justify-center w-5 h-5 border-2 rounded transition-all
+              ${selected 
+                ? 'bg-yellow-400 border-yellow-400 shadow-inner'
+                : 'bg-green-900/80 border-green-500 group-hover:border-yellow-400 group-hover:bg-green-800'
+              }`}
+            >
+              {selected && (
+                <motion.svg 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="w-3 h-3 text-green-900" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                >
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </motion.svg>
+              )}
             </span>
-            {tank.description && (
-              <span className="block text-xs text-green-200/90 mt-1 leading-snug">
-                {tank.description}
+            <div className="flex-1 min-w-0">
+              <span className="block font-medium text-yellow-100 truncate tracking-wide">
+                {tank.name}
               </span>
-            )}
+              {tank.description && (
+                <span className="block text-xs text-green-200/90 mt-1 leading-snug">
+                  {tank.description}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </label>
-  </motion.div>
+      </label>
+    </motion.div>
+  )
 );
 
+AnimatedTankItem.displayName = 'AnimatedTankItem';
+
+
 export const TankSelection = () => {
+  const { setIsAuthenticated,refreshUser } = useUser(); 
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -135,7 +142,7 @@ export const TankSelection = () => {
     const loadTanks = async () => {
       setLoading(prev => ({ ...prev, tanks: true }));
       setError(prev => ({ ...prev, tanks: '' }));
-      
+
       try {
         const tanksData = await getTanksByLocation(selectedLocationId);
         setTanks(tanksData);
@@ -189,7 +196,7 @@ export const TankSelection = () => {
         throw new Error('Selected location not found');
       }
 
-      // First check if email exists
+      // Check if email already exists
       const { data: existingUsers, error: emailCheckError } = await supabase
         .from('users')
         .select('email')
@@ -203,7 +210,7 @@ export const TankSelection = () => {
         return;
       }
 
-      // Proceed with registration if email doesn't exist
+      // Proceed with registration
       const { session } = await registerUserAndAssignTanks({
         name,
         email,
@@ -212,27 +219,18 @@ export const TankSelection = () => {
         selectedTanks
       });
 
-      // Store user data
-      // localStorage.setItem('user', JSON.stringify({
-      //   id: session.user.id,
-      //   name,
-      //   email: session.user.email,
-      //   accessToken: session.access_token,
-      //   location: selectedLocation,
-      //   tanks: tanks.filter(t => selectedTanks.includes(t.id))
-      // }));
-
+      // ✅ Store token under correct key
+      localStorage.setItem('accessToken', session.access_token);
       localStorage.setItem('userId', session.user.id);
-      localStorage.setItem('token', session.access_token);
       localStorage.setItem('email', session.user.email ?? '');
-
-
-      localStorage.setItem('token', session.access_token);
       localStorage.removeItem('tempAuthData');
 
-      // Navigate to homepage after successful registration
-      navigate('/homepage');
+      // ✅ Update authentication state
+      setIsAuthenticated(true);
+      await refreshUser(); 
 
+      // ✅ Navigate to authenticated homepage
+      navigate('/homepage');
     } catch (error: any) {
       console.error('Registration error:', error);
       setError(prev => ({
@@ -244,7 +242,7 @@ export const TankSelection = () => {
     }
   };
 
-  return (
+   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -275,7 +273,7 @@ export const TankSelection = () => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
             className="space-y-2"
           >
             <label className="block text-yellow-100 font-medium">
