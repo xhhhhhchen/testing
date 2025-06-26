@@ -214,7 +214,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, onLogout }: SidebarProps)
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="ml-8 mt-2 space-y-1 border-l-2 border-blue-400 pl-4 overflow-hidden"
+                  className="ml-8 mt-2 space-y-1 border-l-2 border-green-500 pl-4 overflow-hidden"
                 >
                   {forumTopics.map((topic) => (
                     <button
@@ -224,8 +224,8 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, onLogout }: SidebarProps)
                       }
                       className={`text-left w-full text-sm px-3 py-2 rounded-md transition ${
                         currentTopic === topic.id
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-200 hover:bg-green-800'
+                          ? 'bg-yellow-100 text-green-900 font-medium'
+                          : 'text-green-100 hover:bg-green-800'
                       }`}
                     >
                       <span className="mr-2">{topic.icon}</span>
