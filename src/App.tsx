@@ -1,52 +1,59 @@
-import { useState, useEffect } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Routes, Route, Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/sidebar';
 import { TopNavbar } from './components/topnav';
-import { Login } from './components/loginform.tsx';
-import { TankSelection } from './components/TankSelection.tsx'; 
+import { Login } from './components/loginform';
+import { TankSelection } from './components/TankSelection';
 import ChatbotPage from './pages/ChatbotPage';
 import DashboardPage from './pages/DashboardPage';
 import SegmentationPage from './pages/SegmentationPage';
 import PredictivePage from './pages/PredictivePage';
 import Homepage from './pages/Homepage';
 import NotificationPage from './pages/NotificationPage';
-import CommunityForum from './pages/CommunityForum';
-import FAQs from './pages/FAQ.tsx';
+import ForumPage from './pages/CommunityForum';
+import FAQs from './pages/FAQ';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useUser } from './contexts/UserContext';
+import UserProvider from './contexts/UserContext';
+
+
+import PlantReadyEstimator from './pages/pred/PlantReadyEstimator';
+import CO2Estimator from './pages/pred/CO2Estimator';
+import NutrientDeficiency from './pages/pred/NutrientDeficiency';
+import CompostSimulator from './pages/pred/CompostSimulator';
+import WeatherImpact from './pages/pred/WeatherImpact';
+
+
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, setIsAuthenticated, loading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-      if (window.location.pathname === '/') {
+    if (!loading) {
+      if (isAuthenticated && location.pathname === '/') {
         navigate('/homepage');
       }
+      if (!isAuthenticated && !['/', '/login', '/new-acc', '/select-tank'].includes(location.pathname)) {
+        navigate('/');
+      }
     }
-    setLoading(false);
-  }, [navigate]);
+  }, [loading, isAuthenticated, location.pathname, navigate]);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
-  
+
   const handleLogout = async () => {
-    // Start logout animation
     setIsAuthenticated(false);
-    
-    // Wait for animation to complete (500ms matches your exit animation duration)
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Clear storage and navigate
+    await new Promise((resolve) => setTimeout(resolve, 500));
     localStorage.clear();
     navigate('/');
   };
+
+  if (loading) return <div>Loading...</div>; // ✅ this will now stop hanging
 
 
   return (
@@ -56,16 +63,17 @@ function App() {
           key="auth-layout"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ 
+          exit={{
             opacity: 0,
             x: -50,
-            transition: { duration: 0.5 }
+            transition: { duration: 0.5 },
           }}
           className="flex h-screen"
         >
-          <Sidebar 
-            isCollapsed={isSidebarCollapsed} 
-            setIsCollapsed={setIsSidebarCollapsed} 
+         
+          <Sidebar
+            isCollapsed={isCollapsed}
+            setIsCollapsed={setIsCollapsed}
             onLogout={handleLogout}
           />
 
@@ -73,7 +81,7 @@ function App() {
             <div className="sticky top-0 z-50">
               <TopNavbar />
             </div>
-            
+
             <main className="flex-1 overflow-auto p-6 relative z-10">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -87,15 +95,25 @@ function App() {
                   <Routes location={location}>
                     <Route path="/" element={<Layout />}>
                       <Route path="homepage" element={<Homepage />} />
-                        <Route path="chatbot" element={<ChatbotPage />} />
-                        <Route path="dashboards" element={<DashboardPage />} />
-                        <Route path="segmentation" element={<SegmentationPage />} />
-                        <Route path="predictive" element={<PredictivePage />} />
-                        <Route path="community" element={<CommunityForum />} />
-                        <Route path="notification" element={<NotificationPage />} />
-                        <Route path="faq" element={<FAQs />} />
-                        <Route path="*" element={<Navigate to="/homepage" replace />} />
-                        </Route>
+                      <Route path="chatbot" element={<ChatbotPage />} />
+                      <Route path="dashboards" element={<DashboardPage />} />
+                      <Route path="segmentation" element={<SegmentationPage />} />
+                      <Route path="community" element={<ForumPage />} />
+                      <Route path="notification" element={<NotificationPage />} />
+                      <Route path="faq" element={<FAQs />} />
+
+                      {/* Predictive Tools Nested Layout */}
+                      <Route path="predictive" element={<PredictivePage />}>
+                        <Route path="plant-ready" element={<PlantReadyEstimator />} />
+                        <Route path="co2-savings" element={<CO2Estimator />} />
+                        <Route path="nutrient-deficiency" element={<NutrientDeficiency />} />
+                        <Route path="compost-simulator" element={<CompostSimulator />} />
+                        <Route path="weather-impact" element={<WeatherImpact />} />
+                      </Route>
+
+                      <Route path="*" element={<Navigate to="/homepage" replace />} />
+                  
+                    </Route>
                   </Routes>
                 </motion.div>
               </AnimatePresence>
@@ -111,10 +129,10 @@ function App() {
         >
           <Routes location={location}>
             <Route path="/" element={<Login onLogin={handleLogin} />} />
-              <Route path="/login" element={<Login onLogin={handleLogin} />} />
-              <Route path="/select-tank" element={<TankSelection />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <Route path="/login" element={<Login onLogin={handleLogin} />} />
+            <Route path="/select-tank" element={<TankSelection />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </motion.div>
       )}
     </AnimatePresence>
@@ -125,45 +143,10 @@ function Layout() {
   return <Outlet />;
 }
 
-export default App;
-
-// function App() {
-//   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-//   return (
-//     <div className="flex h-screen bg-gray-100">
-//       <Sidebar 
-//         isCollapsed={isSidebarCollapsed} 
-//         setIsCollapsed={setIsSidebarCollapsed} 
-//         onLogout={() => {}} // or remove this prop from Sidebar if not needed
-//       />
-      
-//       <div className="flex-1 flex flex-col">
-//         <TopNavbar />
-//         <main className="flex-1 overflow-auto p-6">
-//           <Routes>
-//             <Route path="/" element={<Layout />}>
-//               <Route path="homepage" element={<Homepage />} />
-//               <Route path="chatbot" element={<ChatbotPage />} />
-//               <Route path="dashboards" element={<DashboardPage />} />
-//               <Route path="segmentation" element={<SegmentationPage />} />
-//               <Route path="predictive" element={<PredictivePage />} />
-//               <Route path="community" element={<CommunityForum />} />
-//               <Route path="notification" element={<NotificationPage />} />
-//               <Route path="faq" element={<FAQs />} />
-//               <Route path="*" element={<Navigate to="/homepage" replace />} />
-//             </Route>
-//           </Routes>
-//         </main>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-// function Layout() {
-//   return <Outlet />;
-// }
-
-// export default App;
+export default function WrappedApp() {
+  return (
+    <UserProvider>
+      <App />
+    </UserProvider>
+  );
+}

@@ -14,11 +14,17 @@ const pageTitles: { [key: string]: string } = {
   '/dashboards': 'Live compost and plant tracking',
   '/chatbot': 'Composting Assistant Chatbot',
   '/segmentation': 'Compost Data Segmentation',
-  '/predictive': 'Predictive modelling',
-  '/user': 'Profile',
   '/community': 'Community Forum',
+  '/user': 'Profile',
   '/notification': 'Notification',
-  '/faq': 'Frequently Asked Questions'
+  '/faq': 'Frequently Asked Questions',
+
+
+  '/predictive/co2-savings': 'CO₂e Savings Estimator',
+  '/predictive/plant-ready': 'Plant Readiness Estimator',
+  '/predictive/nutrient-deficiency': 'Nutrient Deficiency Estimator',
+  '/predictive/compost-simulator': 'Compost Simulator',
+  '/predictive/weather-impact': 'Weather Impact Estimator',
 };
 
 interface Tank {
@@ -37,7 +43,7 @@ export const TopNavbar = () => {
 useEffect(() => {
   const fetchUserDetails = async () => {
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
 
     if (!userId || !token) return;
 
@@ -142,22 +148,6 @@ useEffect(() => {
           </span>
         </div>
 
-        {/* Community */}
-        <div className="relative group">
-          <Link
-            to="/community"
-            className={`w-9 h-9 flex items-center justify-center rounded-full transition cursor-pointer hover:scale-[1.2] ${
-              isActive('/community')
-                ? 'bg-green-950 text-yellow-200'
-                : 'bg-white hover:bg-green-950'
-            }`}
-          >
-            <BiMessageAltDetail className="text-xl hover:text-yellow-200" />
-          </Link>
-          <span className="absolute z-10 w-max left-1/2 -translate-x-1/2 bottom-full mb-0 px-2 py-1 text-xs font-medium text-white bg-green-900/60 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
-            Community Forum
-          </span>
-        </div>
 
         {/* Notifications */}
         <div className="relative group">
