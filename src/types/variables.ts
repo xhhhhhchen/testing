@@ -5,6 +5,7 @@ export interface User {
   username: string;
   email: string;
   location_id: number;
+  location_name?: string; // optional if returned from API
   created_at: string;
   auth_uid: string;
 }
@@ -17,15 +18,29 @@ export interface Location {
 
 export interface Post {
   post_id: number;
-  user_id: number;
-  topic: string;
-  sub_topic: string;
   title: string;
   content: string;
   created_at: string;
-  user?: User;
+  user: {
+    user_id: number;
+    username: string;
+    location?: {
+      location_id: number;
+      location_name: string;
+    };
+  };
+  topic?: string;
+  sub_topic?: string;
   likes_count?: number;
   comments_count?: number;
+}
+
+export interface CreatePostInput {
+  user_id: number;
+  title: string;
+  content: string;
+  topic: string;
+  sub_topic?: string;
 }
 
 export interface Comment {

@@ -82,7 +82,7 @@ function App() {
               <TopNavbar />
             </div>
 
-            <main className="flex-1 overflow-auto p-6 relative z-10">
+            <main className="flex-1 overflow-auto relative z-40">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={location.pathname}
