@@ -14,7 +14,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ post, currentUserId }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-start space-x-4">
-        <UserAvatar userId={post.user_id} username={post.user?.username || ''} />
+        <UserAvatar userId={post.user?.user_id} username={post.user?.username || ''} />
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">{post.title}</h1>
