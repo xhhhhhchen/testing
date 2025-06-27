@@ -15,8 +15,8 @@ const ForumPage: React.FC = () => {
 
   const topic = searchParams.get('topic') || undefined;
   const subTopic = searchParams.get('sub_topic') || undefined;
+  const { posts, loading, error, createPost, refetchPosts } = usePosts(topic, subTopic);
 
-  const { posts, loading, error } = usePosts(topic, subTopic);
 
   const sortedPosts = useMemo(() => {
     if (!posts) return [];
@@ -42,96 +42,81 @@ const ForumPage: React.FC = () => {
     return <div className="p-8 text-center">Please log in to access the forum</div>;
   }
 
-  const handleTabChange = (tabId: string) => {
-    if (tabId === 'all') {
-      navigate('/community');
-    } else {
-      navigate(`/community?topic=${encodeURIComponent(tabId)}`);
-    }
-  };
-
   return (
-<div className="min-h-screen flex flex-col items-center bg-gray-50 overflow-auto">
+    <div className="min-h-screen flex flex-col items-center ">
+      {/* Sticky Top Bar - now matches the width of the main content */}
+      <div className="sticky  top-0 z-30 w-full mt-2 bg-white backdrop-blur border-b border-gray-200 shadow-sm">
+        <div className="w-full flex justify-center">
+          <div className="w-4/5 max-w-screen-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Sort Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSortBy('recent')}
+                className={`flex items-center px-3 py-1.5 cursor-pointer rounded-3xl text-sm border ${
+                  sortBy === 'recent'
+                    ? 'bg-green-100 text-green-700 font-medium border-green-400'
+                    : 'text-gray-600 hover:bg-gray-100 border-gray-300'
+                }`}
+              >
+                <FiClock className="mr-1.5" />
+                Recent
+              </button>
+              <button
+                onClick={() => setSortBy('popular')}
+                className={`flex items-center px-3 py-1.5 text-sm cursor-pointer rounded-3xl border ${
+                  sortBy === 'popular'
+                    ? 'bg-green-100 text-green-700 font-medium border-green-400'
+                    : 'text-gray-600 hover:bg-gray-100 border-gray-300'
+                }`}
+              >
+                <FiTrendingUp className="mr-1.5" />
+                Popular
+              </button>
+            </div>
 
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search posts..."
+                className="w-full pl-9 pr-3 py-1.5 bg-gray-200 rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-700/40 focus:bg-gray-100 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
 
-
-          {/* Main Content - Scrollable */}
-    <main className="flex-1  w-4/5 max-w-screen-xl justify-center overflow-auto p-6 space-y-6">
-
-      
-      {/* Top bar with search, sort, and new post */}
-      <div className="flex flex-col justify-center md:flex-row md:items-center md:justify-between gap-4">
-
-        {/* Sort Buttons */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSortBy('recent')}
-            className={`flex items-center px-4 py-2 text-sm rounded-md border ${
-              sortBy === 'recent'
-                ? 'bg-blue-100 text-blue-700 border-blue-400'
-                : 'text-gray-600 hover:bg-gray-100 border-gray-300'
-            }`}
-          >
-            <FiClock className="mr-2" />
-            Most Recent
-          </button>
-          <button
-            onClick={() => setSortBy('popular')}
-            className={`flex items-center px-4 py-2 text-sm rounded-md border ${
-              sortBy === 'popular'
-                ? 'bg-blue-100 text-blue-700 border-blue-400'
-                : 'text-gray-600 hover:bg-gray-100 border-gray-300'
-            }`}
-          >
-            <FiTrendingUp className="mr-2" />
-            Most Popular
-          </button>
+            {/* New Post Button */}
+            <button
+              onClick={() => (document.getElementById('create-post-modal') as HTMLDialogElement)?.showModal()}
+              className="flex items-center px-3 py-1.5 bg-green-800 text-white rounded-md cursor-pointer hover:bg-green-700 text-sm whitespace-nowrap"
+            >
+              <FiPlus className="mr-1.5" />
+              New Post
+            </button>
+          </div>
         </div>
-
-
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search posts..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* New Post Button */}
-        <button
-          onClick={() => (document.getElementById('create-post-modal') as HTMLDialogElement)?.showModal()}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <FiPlus className="mr-2" />
-          New Post
-        </button>
       </div>
 
-      {/* Post List */}
-      <PostList posts={sortedPosts} loading={loading} error={error} />
-    </main>
+      {/* Main Content Area */}
+      <main className="w-4/5 max-w-screen-xl flex-1 py-6 space-y-6">
+        <PostList posts={sortedPosts} loading={loading} error={error} />
+      </main>
 
 
-          {/* Create Post Modal */}
-          <dialog id="create-post-modal" className="modal">
-            <div className="modal-box">
-              <CreatePost userId={user.user_id} />
-              <div className="modal-action">
-                <button
-                  className="btn"
-                  onClick={() => (document.getElementById('create-post-modal') as HTMLDialogElement)?.close()}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </dialog>
+
+      {/* Create Post Modal */}
+      
+      <dialog id="create-post-modal" className="modal fixed inset-0 z-50 rounded-2xl max-w-2xl w-full justify-center ">
+        <div className="modal-box rounded-lg max-w-2xl w-full">
+         <CreatePost userId={user.user_id} onPostCreated={refetchPosts} />
+
         </div>
-      );
-    };
+      </dialog>
+
+
+    </div>
+  );
+};
 
 export default ForumPage;

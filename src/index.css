@@ -50,3 +50,25 @@
   background: rgba(232, 209, 139, 0.8); 
   border: none; 
 }
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+dialog[open] {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+  z-index: 50;
+}
+
+.modal[open] {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
