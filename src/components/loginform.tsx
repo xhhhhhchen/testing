@@ -15,14 +15,6 @@ interface LocationState {
   prefilledEmail?: string;
 }
 
-// interface Tank {
-//   id: string;
-//   name: string;
-//   description?: string;
-//   location_id?: string; // optional if returned from API
-// }
-
-
 
 export const Login = ({ onLogin }: LoginProps) => {
   const [name, setName] = useState('');
@@ -70,91 +62,6 @@ export const Login = ({ onLogin }: LoginProps) => {
     if (value && touchedFields[field]) return `${baseStyles} bg-green-800 border-green-400 text-yellow-200 placeholder-green-300`;
     return `${baseStyles} bg-green-900 border-green-600 text-yellow-50 placeholder-green-400`;
   };
-
-
-// const handleSubmit = async (e: React.FormEvent) => {
-//   e.preventDefault();
-//   if (!validateForm()) return;
-
-//   if (isNewUser) {
-//     const formatName = (name: string) =>
-//       name.trim().split(' ').map(word =>
-//         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-//       ).join(' ');
-
-//     const tempUser = {
-//       name: formatName(name),
-//       email,
-//       password
-//     };
-//     localStorage.setItem('tempAuthData', JSON.stringify(tempUser));
-//     navigate('/select-tank');
-//   } else {
-//     try {
-//       setLoginError(null);
-
-//       await signInUser(email, password);
-//       const session = await getSession();
-//       const userId = session.user.id;
-
-//       // 1. Fetch user profile
-//       const { data: userProfile, error: profileError } = await supabase
-//         .from('users')
-//         .select('user_id,username, created_at, location_id')
-//         .eq('auth_uid', userId)
-//         .single();
-//       if (profileError) throw profileError;
-
-//       // 2. Fetch location info
-//       const { data: locationData, error: locationError } = await supabase
-//         .from('location')
-//         .select('location_id, location_name')
-//         .eq('location_id', userProfile.location_id)
-//         .single();
-//       if (locationError) throw locationError;
-
-//       // 3. Fetch user_tank mappings
-//       const { data: tankMappings, error: tankMappingError } = await supabase
-//         .from('user_tanks')
-//         .select('tank_id')
-//         .eq('user_id', userProfile.user_id);
-//       if (tankMappingError) throw tankMappingError;
-
-//       const tankIds = tankMappings.map(t => t.tank_id);
-
-//       // 4. Fetch full tank details via external API
-//       let fullTankInfo: Tank[] = [];
-
-//       if (tankIds.length > 0) {
-//         const response = await getTanksByIds(tankIds); // 🔁 replace with your actual API function
-//         fullTankInfo = response || [];
-//       }
-
-//       // 5. Store user info in localStorage
-//       localStorage.setItem('user', JSON.stringify({
-//         // id: userId,
-//         email: session.user.email,
-//         name: userProfile.username,
-//         created_at: userProfile.created_at,
-//         accessToken: session.access_token,
-//         location: locationData,
-//         tanks: fullTankInfo
-//       }));
-//       localStorage.setItem('token', session.access_token);
-
-//       onLogin();
-//       navigate('/homepage');
-
-//     } catch (error: any) {
-//       console.error('Login error:', error);
-//       setLoginError(
-//         error.message.includes('Invalid login credentials')
-//           ? 'Invalid email or password'
-//           : error.message || 'Login failed'
-//       );
-//     }
-//   }
-// };
 
 
 const { setIsAuthenticated, refreshUser } = useUser();
@@ -207,7 +114,6 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
   }
 };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#00421D] p-4">
