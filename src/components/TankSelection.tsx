@@ -1,24 +1,31 @@
 "use client";
 
-import React, { useEffect, useState, forwardRef,useContext } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAllLocations, getTanksByLocation } from '../api';
+import { getTanksByLocation } from '../api';
 import { registerUserAndAssignTanks } from '../utils/authUtils';
 import { LoadingSpinner } from './LoadingSpinner';
 import { supabase } from '../supabaseClient.ts';
 import { useUser } from '../contexts/UserContext';
 
+// types
 interface Location {
-  id: string;
+  id: number;
   name: string;
+}
+
+interface Site {
+  site_id: number;
+  site_name: string;
+  location_id: string;
 }
 
 interface Tank {
   id: string;
   name: string;
   description?: string;
-  locationId?: string;
+  siteId?: string;
 }
 
 interface AnimatedTankItemProps {
@@ -27,6 +34,7 @@ interface AnimatedTankItemProps {
   onChange: (id: string) => void;
 }
 
+// Renders a single animated tank item with checkbox.
 const AnimatedTankItem = forwardRef<HTMLDivElement, AnimatedTankItemProps>(
   ({ tank, selected, onChange }, ref) => (
     <motion.div
@@ -88,35 +96,48 @@ const AnimatedTankItem = forwardRef<HTMLDivElement, AnimatedTankItemProps>(
 
 AnimatedTankItem.displayName = 'AnimatedTankItem';
 
-
 export const TankSelection = () => {
-  const { setIsAuthenticated,refreshUser } = useUser(); 
+  const { setIsAuthenticated, refreshUser } = useUser();
   const [locations, setLocations] = useState<Location[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState('');
-  const [tanks, setTanks] = useState<Tank[]>([]);
+  const [tanksBySite, setTanksBySite] = useState<Record<string, Tank[]>>({});
   const [selectedTanks, setSelectedTanks] = useState<string[]>([]);
-  const [loading, setLoading] = useState({
-    locations: true,
-    tanks: false,
-    submission: false
+  const [loading, setLoading] = useState({ 
+    locations: true, 
+    sites: false, 
+    tanks: false, 
+    submission: false 
   });
-  const [error, setError] = useState({
-    locations: '',
-    tanks: '',
-    submission: ''
+  const [error, setError] = useState({ 
+    locations: '', 
+    sites: '', 
+    tanks: '', 
+    submission: '' 
   });
-  const [emailConflict, setEmailConflict] = useState({
-    exists: false,
-    email: ''
-  });
+  const [emailConflict, setEmailConflict] = useState({ exists: false, email: '' });
   const navigate = useNavigate();
 
   // Load locations on component mount
   useEffect(() => {
     const loadLocations = async () => {
       try {
-        const locationsData = await getAllLocations();
-        setLocations(locationsData);
+
+        console.log("Fetching locations...");
+        const { data, error } = await supabase
+          .from('locations')
+          .select('location_id, location_name')
+          .order('location_name', { ascending: true });
+        console.log("Locations data:", data);
+        console.log("Error:", error);
+
+        if (error) throw error;
+        setLocations(
+          (data || []).map((loc: any) => ({
+            id: loc.location_id,
+            name: loc.location_name
+          }))
+        );
       } catch (err) {
         setError(prev => ({
           ...prev,
@@ -131,25 +152,68 @@ export const TankSelection = () => {
     loadLocations();
   }, []);
 
-  // Load tanks when location changes
+  // Load sites when location changes
   useEffect(() => {
-    if (!selectedLocationId) {
-      setTanks([]);
-      setSelectedTanks([]);
-      return;
-    }
+    const loadSites = async () => {
+      if (!selectedLocationId) {
+        setSites([]);
+        setTanksBySite({});
+        return;
+      }
 
-    const loadTanks = async () => {
+      setLoading(prev => ({ ...prev, sites: true, tanks: true }));
+      setError(prev => ({ ...prev, sites: '', tanks: '' }));
+
+      try {
+        const { data, error } = await supabase
+          .from('sites')
+          .select('*')
+          .eq('location_id', selectedLocationId)
+          .order('site_name', { ascending: true });
+
+        if (error) throw error;
+        setSites(data || []);
+        setTanksBySite({});
+      } catch (err) {
+        setError(prev => ({
+          ...prev,
+          sites: 'Failed to load sites for this location.'
+        }));
+        console.error('Failed to load sites', err);
+      } finally {
+        setLoading(prev => ({ ...prev, sites: false }));
+      }
+    };
+
+    loadSites();
+  }, [selectedLocationId]);
+
+  // Load tanks when sites change
+  useEffect(() => {
+    const loadTanksForSites = async () => {
+      if (!sites.length || !selectedLocationId) return;
+
       setLoading(prev => ({ ...prev, tanks: true }));
       setError(prev => ({ ...prev, tanks: '' }));
 
       try {
-        const tanksData = await getTanksByLocation(selectedLocationId);
-        setTanks(tanksData);
+        const tankResults = await Promise.all(
+          sites.map(async site => {
+            const tanks = await getTanksByLocation(String(site.site_id));
+            return { siteId: site.site_id, tanks };
+          })
+        );
+
+        const newTanksBySite: Record<string, Tank[]> = {};
+        tankResults.forEach(({ siteId, tanks }) => {
+          newTanksBySite[siteId] = tanks;
+        });
+
+        setTanksBySite(newTanksBySite);
       } catch (err) {
         setError(prev => ({
           ...prev,
-          tanks: 'Failed to load tanks for this location.'
+          tanks: 'Failed to load tanks for these sites.'
         }));
         console.error('Failed to load tanks', err);
       } finally {
@@ -157,8 +221,8 @@ export const TankSelection = () => {
       }
     };
 
-    loadTanks();
-  }, [selectedLocationId]);
+    loadTanksForSites();
+  }, [sites, selectedLocationId]);
 
   const handleCheckboxChange = (tankId: string) => {
     setSelectedTanks(prev =>
@@ -190,11 +254,6 @@ export const TankSelection = () => {
 
     try {
       const { name, email, password } = JSON.parse(authData);
-      const selectedLocation = locations.find(loc => String(loc.id) === String(selectedLocationId));
-
-      if (!selectedLocation) {
-        throw new Error('Selected location not found');
-      }
 
       // Check if email already exists
       const { data: existingUsers, error: emailCheckError } = await supabase
@@ -219,17 +278,13 @@ export const TankSelection = () => {
         selectedTanks
       });
 
-      // ✅ Store token under correct key
       localStorage.setItem('accessToken', session.access_token);
       localStorage.setItem('userId', session.user.id);
       localStorage.setItem('email', session.user.email ?? '');
       localStorage.removeItem('tempAuthData');
 
-      // ✅ Update authentication state
       setIsAuthenticated(true);
       await refreshUser(); 
-
-      // ✅ Navigate to authenticated homepage
       navigate('/homepage');
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -242,192 +297,180 @@ export const TankSelection = () => {
     }
   };
 
-   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-screen flex items-center justify-center bg-[#00421D] p-4"
-    >
-      <div className="p-6 sm:p-8 bg-green-900/90 rounded-xl shadow-2xl w-full max-w-md ring-2 ring-green-700/50 backdrop-blur-sm">
-        <motion.h2 
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-2xl sm:text-3xl font-bold text-yellow-300 mb-6 text-center"
+  const totalTanks = Object.values(tanksBySite).reduce((sum, tanks) => sum + tanks.length, 0);
+
+return (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.3 }}
+    className="min-h-screen flex items-center justify-center bg-[#00421D] p-4"
+  >
+    <div className="p-6 sm:p-8 bg-green-900/90 rounded-xl shadow-2xl w-full max-w-2xl ring-2 ring-green-700/50 backdrop-blur-sm">
+      <motion.h2 
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="text-2xl sm:text-3xl font-bold text-yellow-300 mb-6 text-center"
+      >
+        {!selectedLocationId 
+          ? "Select Your Composting Location" 
+          : "Select Your Composting Tanks"}
+      </motion.h2>
+
+      {error.locations && (
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="mb-4 p-3 bg-red-900/50 text-red-100 rounded-lg"
         >
-          Select Your Location
-        </motion.h2>
+          {error.locations}
+        </motion.div>
+      )}
 
-        {error.locations && (
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="mb-4 p-3 bg-red-900/50 text-red-100 rounded-lg"
-          >
-            {error.locations}
-          </motion.div>
-        )}
+    <div className="space-y-6">
+      {/* Step 1: Location Selection (only shown when no location selected) */}
+      {!selectedLocationId && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-4"
+        >
+          {loading.locations ? (
+            <div className="flex justify-center py-4">
+              <LoadingSpinner size="small" />
+            </div>
+          ) : (
+            // Change this div to use only one column
+            <div className="grid grid-cols-1 gap-3"> {/* Removed sm:grid-cols-2 */}
+              {locations
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((location) => (
+                <motion.button
+                  key={location.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSelectedLocationId(String(location.id))}
+                  className="p-4 rounded-lg bg-green-800 border-2 border-green-600 hover:border-yellow-400 text-white text-left transition-all"
+                >
+                  <h3 className="font-bold text-yellow-100">{location.name}</h3>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
 
-        <div className="space-y-6">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-2"
-          >
-            <label className="block text-yellow-100 font-medium">
-              Select Location
-            </label>
-            {loading.locations ? (
-              <div className="flex justify-center py-4">
-                <LoadingSpinner size="small" />
-              </div>
-            ) : (
-              <select
-                className="w-full px-4 py-2 rounded-lg bg-green-800 border border-green-600 text-white focus:ring-2 focus:ring-yellow-200 focus:outline-none transition-all"
-                value={selectedLocationId}
-                onChange={(e) => setSelectedLocationId(e.target.value)}
-                disabled={loading.locations}
-              >
-                <option value="">-- Choose a location --</option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </motion.div>
+        {/* Step 2: Sites and Tanks Selection (shown after location is selected) */}
+        {selectedLocationId && (
+          <>
+            {/* Back button to change location */}
+            <motion.button
+              onClick={() => setSelectedLocationId('')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center text-yellow-300 hover:text-yellow-200 text-sm mb-4"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Change Location
+            </motion.button>
 
-          {selectedLocationId && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="space-y-2"
+              className="space-y-4"
             >
               <label className="block text-yellow-100 font-medium">
-                Select Tank(s)
+                Available Composting Tanks
               </label>
               
               {error.tanks && (
                 <div className="text-red-400 text-sm">{error.tanks}</div>
               )}
 
-              {loading.tanks ? (
+              {loading.sites ? (
                 <div className="flex justify-center py-4">
                   <LoadingSpinner size="small" />
                 </div>
-              ) : tanks.length === 0 ? (
-                <p className="text-green-200">No tanks available at this location</p>
+              ) : sites.length === 0 ? (
+                <p className="text-green-200">No sites available at this location</p>
               ) : (
-                <div className="relative">
-             
-          {/* Top indicator - subtle line */}
-          <div className="sticky top-0 h-1 z-10 pointer-events-none 
-            bg-gradient-to-b from-neutral-900/30 to-transparent" />
-          
-          {/* Scrollable content */}
-          <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto py-3 px-1 tank-scrollbar">
-                    <AnimatePresence mode="popLayout">
-                      {[...tanks]
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((tank) => (
-                          <AnimatedTankItem
-                            key={tank.id}
-                            tank={tank}
-                            selected={selectedTanks.includes(tank.id)}
-                            onChange={handleCheckboxChange}
-                          />
-                        ))}
-                    </AnimatePresence>
-                  </div>
-
-                  {tanks.length > 5 && (
-         <div className="sticky bottom-0 h-1 z-10 pointer-events-none bg-gradient-to-t from-neutral-900/30 to-transparent" />
-                  )}
+                <div className="space-y-6">
+                  {sites
+                  .sort((a, b) => a.site_name.localeCompare(b.site_name))
+                  .map(site => {
+                    const siteTanks = tanksBySite[site.site_id] || [];
+                    return (
+                      <div key={site.site_id} className="space-y-3">
+                        <h3 className="text-green-200 font-medium border-b border-green-700 pb-1">
+                          {site.site_name}
+                        </h3>
+                        
+                        {loading.tanks ? (
+                          <div className="flex justify-center py-2">
+                            <LoadingSpinner size="small" />
+                          </div>
+                        ) : siteTanks.length === 0 ? (
+                          <p className="text-green-200/70 text-sm">No tanks at this site</p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <AnimatePresence mode="popLayout">
+                              {siteTanks
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map(tank => (
+                                <AnimatedTankItem
+                                  key={tank.id}
+                                  tank={tank}
+                                  selected={selectedTanks.includes(tank.id)}
+                                  onChange={handleCheckboxChange}
+                                />
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-            </motion.div>
-          )}
 
-          {emailConflict.exists && (
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="mb-4 p-4 bg-yellow-900/50 border border-yellow-600 rounded-lg"
-            >
-              <div className="flex items-start">
-                <svg className="h-5 w-5 text-yellow-400 mt-0.5 mr-2 flex-shrink-0" 
-                     fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <h3 className="text-yellow-300 font-medium">
-                    Account already exists
-                  </h3>
-                  <p className="text-yellow-100 mt-1">
-                    The email <span className="font-semibold">{emailConflict.email}</span> is already registered.
-                  </p>
-                  <div className="mt-3 flex items-center justify-center">
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate('/login', { state: { prefilledEmail: emailConflict.email } })}
-                      className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-yellow-900 rounded text-sm font-medium transition-colors"
-                    >
-                      Sign in instead
-                    </motion.button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {error.submission && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-red-400 text-center"
-            >
-              {error.submission}
-            </motion.div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <motion.button
-              whileHover={selectedTanks.length && !loading.submission && !emailConflict.exists ? { 
-                scale: 1.02,
-                boxShadow: '0 4px 15px rgba(250, 204, 21, 0.3)'
-              } : {}}
-              whileTap={selectedTanks.length && !loading.submission && !emailConflict.exists ? { 
-                scale: 0.98 
-              } : {}}
-              onClick={handleSubmit}
-              disabled={selectedTanks.length === 0 || loading.submission || emailConflict.exists}
-              className={`w-full py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                (selectedTanks.length && !loading.submission && !emailConflict.exists)
-                  ? 'bg-yellow-400 hover:bg-yellow-300 text-green-900 font-bold shadow-md'
-                  : 'bg-gray-500 cursor-not-allowed text-gray-200'
-              }`}
-            >
-              {loading.submission ? (
-                <>
-                  <LoadingSpinner size="small" className="mr-2" />
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account & Continue'
+              {/* Submit button */}
+              {selectedTanks.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="pt-4"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSubmit}
+                    disabled={loading.submission}
+                    className={`w-full py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                      !loading.submission
+                        ? 'bg-yellow-400 hover:bg-yellow-300 text-green-900 font-bold shadow-md'
+                        : 'bg-gray-500 cursor-not-allowed text-gray-200'
+                    }`}
+                  >
+                    {loading.submission ? (
+                      <>
+                        <LoadingSpinner size="small" className="mr-2" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Create Account & Continue'
+                    )}
+                  </motion.button>
+                </motion.div>
               )}
-            </motion.button>
-          </motion.div>
-        </div>
+            </motion.div>
+          </>
+        )}
       </div>
-    </motion.div>
-  );
-};
+    </div>
+  </motion.div>
+);}
