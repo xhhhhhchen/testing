@@ -57,7 +57,7 @@ useEffect(() => {
       if (profileError || !userProfile) throw new Error('User profile not found');
 
       const { data: locationData } = await supabase
-        .from('location')
+        .from('locations')
         .select('location_id, location_name')
         .eq('location_id', userProfile.location_id)
         .single();
