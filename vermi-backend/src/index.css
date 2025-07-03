@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@tailwind utilities;
+
+* {
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  @apply bg-transparent w-2;
+}
+
+*::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+}
+
+.scrollbar-hidden::-webkit-scrollbar-thumb {
+  @apply bg-transparent;
+}
+
+.scrollbar-hidden:hover::-webkit-scrollbar-thumb {
+  @apply bg-slate-300;
+}
+
+/* Unified Scrollbar Styling */
+.tank-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 209, 139, 0.6) rgba(3, 23, 17, 0.187);
+}
+
+.tank-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tank-scrollbar::-webkit-scrollbar-track {
+  background: rgba(3, 23, 17, 0.187); /* Dark green track matching Firefox */
+  border-radius: 4px;
+  border: none; 
+}
+
+.tank-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(232, 209, 139, 0.6); 
+  border-radius: 4px;
+  border: none; 
+}
+
+.tank-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 209, 139, 0.8); 
+  border: none; 
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+dialog[open] {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+  z-index: 50;
+}
+
+.modal[open] {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
