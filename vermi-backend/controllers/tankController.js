@@ -8,7 +8,7 @@ const { query: tankQuery } = require('../db/tankDb');
 //       SELECT 
 //         d.DeviceID AS id,
 //         d.DeviceName,
-//         d.DeviceDescription,
+//         d.DeviceDescription, 
 //         l.LocationName AS location,
 //         l.LocationID,
 //         d.BearerToken
